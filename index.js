@@ -1,20 +1,25 @@
 require('dotenv').config();
 const express = require('express');
+const bodyParser = require('body-parser')
 const cors = require('cors');
-const dns = require('dns')
+const dns = require('dns');
 const app = express();
 
 // Basic Configuration
 const port = process.env.PORT || 3000;
 
 app.use(cors());
+app.use(bodyParser.urlencoded({ extended: false }))
 app.use(express.json())
 app.use('/public', express.static(`${process.cwd()}/public`));
 
 app.get('/', function (req, res) {
   res.sendFile(process.cwd() + '/views/index.html');
 });
-let storage = []
+let storage = [{
+  "original_url": "https://www.youtube.com/watch?v=fqrweofuvr4",
+  "short_url": 1
+}]
 
 // Your first API endpoint
 app.get('/api/hello', function (req, res) {
@@ -22,33 +27,46 @@ app.get('/api/hello', function (req, res) {
 });
 
 app.post('/api/shorturl', async (req, res) => {
+  let { url } = req.body
 
-  try {
-    if (!req.body.url.startsWith('https://') && !req.body.url.startsWith('http://')) {
-      console.log('here');
-      throw new Error()
-    }
-    req.body.url = req.body.url.toLowerCase().replace(/https?:\/\//, '')
-
-
-    dns.lookup(req.body.url, (err) => {
-
-      if (err) {
-        console.log('err', err);
-        return res.json({ error: 'invalid url' })
-      }
-
-      let result = {
-        original_url: req.body.url,
-        short_url: storage.length
-      }
-
-      storage.push(result)
-      res.json({ result })
-    })
-  } catch (err) {
-    res.status(400).json({ error: 'invalid url' })
+  if (!url.startsWith('https://') && !url.startsWith('http://')) {
+    return res.json({ error: 'invalid url' })
   }
+  const original_url = url.toLowerCase()
+  url = url.replace(/https?:\/\//, '')
+
+  let host;
+  try {
+    host = new URL(original_url).host
+  } catch (error) {
+    return res.json({ error: 'invalid url' })
+  }
+  dns.lookup(host, (err) => {
+
+    if (err) {
+      return res.json({ error: 'invalid url' })
+    }
+
+    let resultModel = {
+      original_url,
+      short_url: storage.length + 1
+    }
+
+    for (let i = 0; i < storage.length; i++) {
+      if (storage[i].original_url === original_url) {
+        return res.json(storage[i])
+      }
+    }
+
+
+    storage.push(resultModel)
+    res.json(resultModel)
+  })
+
+})
+
+app.get('/api/shorturl/:id', async (req, res) => {
+  res.redirect(storage[req.params.id - 1].original_url)
 })
 
 app.listen(port, function () {
