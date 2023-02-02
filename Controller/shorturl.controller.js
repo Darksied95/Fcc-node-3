@@ -30,11 +30,6 @@ function postShorturl(req, res) {
       short_url: storage.length + 1
     }
 
-    // for (let i = 0; i < storage.length; i++) {
-    //   if (storage[i].original_url === original_url) {
-    //     return res.json(storage[i])
-    //   }
-    // }
 
     for (const url of storage) {
       if (url.original_url === original_url)
