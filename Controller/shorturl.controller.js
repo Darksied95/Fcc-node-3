@@ -31,9 +31,9 @@ function postShorturl(req, res) {
     }
 
 
-    for (const url of storage) {
-      if (url.original_url === original_url)
-        return res.json(url)
+    for (const urlObject of storage) {
+      if (urlObject.original_url === original_url)
+        return res.json(urlObject)
     }
 
     storage.push(resultModel)
